@@ -198,6 +198,7 @@ func TestEditCallToolReturnsImage(t *testing.T) {
 			"image_url": images.URL + "/x.png",
 			"circle":    true,
 			"format":    "png",
+			"inline":    true,
 		},
 	})
 	if err != nil {

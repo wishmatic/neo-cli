@@ -153,6 +153,7 @@ func TestBgkillCallToolFormatsOutput(t *testing.T) {
 			"model_name": forge.BgkillModels[0],
 			"image_url":  images.URL + "/x.png",
 			"format":     "jpeg",
+			"inline":     true,
 		},
 	})
 	if err != nil {

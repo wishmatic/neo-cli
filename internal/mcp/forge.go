@@ -37,7 +37,8 @@ func registerForge(srv *mcp.Server, c *Clients) {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name: "forge",
 		Description: "Generate an image with the local Stable Diffusion WebUI (Forge Neo) instance, synchronously: " +
-			"the call blocks until generation completes and returns the image. Pass init_image_url to transform an " +
+			"the call blocks until generation completes and returns its URL, attaching the image itself when inline " +
+			"is set. Pass init_image_url to transform an " +
 			"existing image instead of generating from scratch; the service downloads it (following redirects). " +
 			"Without an init image, width and height default to 512. With one, they default to the init image's own " +
 			"size on the model's pixel grid, and when only one of them is given, the other keeps the init image's " +
@@ -61,6 +62,7 @@ func (c *Clients) forge(
 	c.Log.Debug("tool called",
 		zap.String("tool", "forge"),
 		zap.String("format", format.String()),
+		zap.Bool("inline", in.IsInline),
 		zap.Int("inline_max_edge", in.InlineMaxEdge),
 		zap.Int("inline_max_bytes", in.InlineMaxBytes),
 		zap.String("model", in.Model),
@@ -101,7 +103,7 @@ func (c *Clients) forge(
 
 	c.Log.Info("forge generation finished", zap.Int("images", len(images)))
 
-	result, out, err := c.publishImages(ctx, "forge", images, format, in.inlineBudget())
+	result, out, err := c.publishImages(ctx, "forge", images, format, in.inlineInput)
 	if err != nil {
 		return nil, generationOutput{}, err
 	}

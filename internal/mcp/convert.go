@@ -43,6 +43,7 @@ func (c *Clients) convert(
 	c.Log.Debug("tool called",
 		zap.String("tool", "convert"),
 		zap.String("format", target.String()),
+		zap.Bool("inline", in.IsInline),
 		zap.Int("inline_max_edge", in.InlineMaxEdge),
 		zap.Int("inline_max_bytes", in.InlineMaxBytes),
 		zap.String("image_url", in.ImageURL),
@@ -63,7 +64,7 @@ func (c *Clients) convert(
 		return nil, generationOutput{}, fmt.Errorf("convert: %w", err)
 	}
 
-	return c.publishImages(ctx, "convert", [][]byte{out}, target, in.inlineBudget())
+	return c.publishImages(ctx, "convert", [][]byte{out}, target, in.inlineInput)
 }
 
 func convertSchema() *jsonschema.Schema {

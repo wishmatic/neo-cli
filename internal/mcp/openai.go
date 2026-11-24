@@ -44,7 +44,8 @@ func registerOpenAI(srv *mcp.Server, c *Clients) {
 	mcp.AddTool(srv, &mcp.Tool{
 		Name: "openai",
 		Description: "Generate one or more images through an OpenAI-compatible endpoint, synchronously: the call " +
-			"blocks until generation completes and returns the images. provider names which of the configured " +
+			"blocks until generation completes and returns their URLs, attaching the images themselves when inline " +
+			"is set. provider names which of the configured " +
 			"endpoints to call, defaulting to the first. Pass image to transform an existing image instead of " +
 			"generating from scratch, and mask to confine the change to the regions it marks. Bills the endpoint's " +
 			"balance for each image; the charge is reported in costUsd where the endpoint reports one.",
@@ -67,6 +68,7 @@ func (c *Clients) openai(
 		zap.String("tool", "openai"),
 		zap.String("provider", in.Provider),
 		zap.String("format", format.String()),
+		zap.Bool("inline", in.IsInline),
 		zap.Int("inline_max_edge", in.InlineMaxEdge),
 		zap.Int("inline_max_bytes", in.InlineMaxBytes),
 		zap.String("model", in.Model),
@@ -96,7 +98,7 @@ func (c *Clients) openai(
 		zap.Float64("cost_usd", result.CostUSD),
 	)
 
-	callResult, out, err := c.publishImages(ctx, "openai", images, format, in.inlineBudget())
+	callResult, out, err := c.publishImages(ctx, "openai", images, format, in.inlineInput)
 	if err != nil {
 		return nil, openaiOutput{}, err
 	}

@@ -63,6 +63,7 @@ func TestConvertCallToolReturnsImage(t *testing.T) {
 				Arguments: map[string]any{
 					"image_url": images.URL + "/x.png",
 					"format":    format.String(),
+					"inline":    true,
 				},
 			})
 			if err != nil {
@@ -107,6 +108,7 @@ func TestConvertCallToolShrinksTheInlineImageToTheNamedBudget(t *testing.T) {
 	result := callTool(t, srv, "convert", map[string]any{
 		"image_url":       images.URL + "/x.png",
 		"format":          "jpeg",
+		"inline":          true,
 		"inline_max_edge": 16,
 	})
 

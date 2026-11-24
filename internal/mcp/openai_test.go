@@ -59,6 +59,7 @@ func TestOpenAICallToolStoresAndAttaches(t *testing.T) {
 		"model":  "flux-schnell",
 		"prompt": "a cat",
 		"size":   "1024x1024",
+		"inline": true,
 	})
 
 	if path := singleRequestPath(t, log); path != "/images/generations" {
@@ -241,8 +242,8 @@ func TestOpenAICallToolFetchesALinkedImage(t *testing.T) {
 
 	result := callTool(t, srv, "openai", map[string]any{"prompt": "a cat"})
 
-	if len(result.Content) != 2 {
-		t.Fatalf("content = %d, want a URL and one image", len(result.Content))
+	if len(result.Content) != 1 {
+		t.Fatalf("content = %#v, want the URL alone", result.Content)
 	}
 
 	text, ok := result.Content[0].(*mcp.TextContent)
