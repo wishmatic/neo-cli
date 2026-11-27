@@ -45,12 +45,17 @@ hosting is involved; `--out` picks the directory.
 ```sh
 neo-cli help
 neo-cli gen image "a red fox in snow" --model sd.safetensors --forge-preset default --out ./images
-neo-cli edit https://example.com/logo.png --square --out ./images
-neo-cli convert https://example.com/logo.png --format webp --out ./images
-neo-cli bgkill https://example.com/photo.jpg --model General --out ./images
+neo-cli gen image "a red fox in snow" --init-image ./fox.png --model sd.safetensors --forge-preset default --out ./images
+neo-cli edit square https://example.com/logo.png --out ./images
+neo-cli edit circle ./logo.png --out ./images
+neo-cli edit convert https://example.com/logo.png --format webp --out ./images
+neo-cli edit bgkill https://example.com/photo.jpg --model General --out ./images
 ```
 
-`gen` also answers to `generate`.
+`gen` also answers to `generate`. `edit` has `trim`, `square`, `circle`, `convert`, and `bgkill`
+subcommands, and every `<image>` they take is a local path or an address the resolver can read, such
+as an http(s) URL, a data URI, or raw base64. `--init-image` takes a local file for img2img;
+`--init-image-url` takes an address.
 
 `neo-cli serve` runs the MCP server itself.
 

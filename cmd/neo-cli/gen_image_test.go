@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -141,6 +143,85 @@ func TestForgeCommandUsesTheInitImage(t *testing.T) {
 	assertField(t, payload, "denoising_strength", 0.75)
 	assertField(t, payload, "width", float64(8))
 	assertField(t, payload, "height", float64(8))
+}
+
+func TestForgeCommandUsesALocalInitImage(t *testing.T) {
+	png := testPNG(t)
+
+	path := filepath.Join(t.TempDir(), "init.png")
+	if err := os.WriteFile(path, png, 0o600); err != nil {
+		t.Fatalf("WriteFile() error: %v", err)
+	}
+
+	server, requests := captureServer(t, http.StatusOK,
+		fmt.Sprintf(`{"images":[%q]}`, base64.StdEncoding.EncodeToString(png)))
+
+	_, _, err := runCommand(t, cli.Deps{Config: testConfig(), Forge: forgeClientAt(server.URL)},
+		"gen", "image", "a cat",
+		"--model", "model",
+		"--forge-preset", "preset",
+		"--init-image", path,
+		"--out", t.TempDir(),
+	)
+	if err != nil {
+		t.Fatalf("Execute() error: %v", err)
+	}
+
+	request := nextRequest(t, requests)
+	if request.Path != "/sdapi/v1/img2img" {
+		t.Errorf("path = %s, want /sdapi/v1/img2img", request.Path)
+	}
+
+	payload := request.jsonBody(t)
+
+	images, ok := payload["init_images"].([]any)
+	if !ok || len(images) != 1 {
+		t.Fatalf("init_images = %v, want the local file base64 encoded", payload["init_images"])
+	}
+
+	if images[0] != base64.StdEncoding.EncodeToString(png) {
+		t.Error("init_images does not carry the local file's bytes")
+	}
+
+	assertField(t, payload, "width", float64(8))
+	assertField(t, payload, "height", float64(8))
+}
+
+func TestForgeCommandRefusesBothInitImageForms(t *testing.T) {
+	server, requests := captureServer(t, http.StatusOK, `{"images":[]}`)
+
+	_, _, err := runCommand(t, cli.Deps{Config: testConfig(), Forge: forgeClientAt(server.URL)},
+		"gen", "image", "a cat",
+		"--model", "model",
+		"--forge-preset", "preset",
+		"--init-image", "/tmp/init.png",
+		"--init-image-url", "https://example.test/init.png",
+		"--out", t.TempDir(),
+	)
+	if err == nil || !strings.Contains(err.Error(), "only one of") {
+		t.Fatalf("Execute() error = %v, want the two init image forms refused", err)
+	}
+
+	assertNoRequest(t, requests)
+}
+
+func TestForgeCommandReportsAMissingInitImageFile(t *testing.T) {
+	server, requests := captureServer(t, http.StatusOK, `{"images":[]}`)
+
+	missing := filepath.Join(t.TempDir(), "absent.png")
+
+	_, _, err := runCommand(t, cli.Deps{Config: testConfig(), Forge: forgeClientAt(server.URL)},
+		"gen", "image", "a cat",
+		"--model", "model",
+		"--forge-preset", "preset",
+		"--init-image", missing,
+		"--out", t.TempDir(),
+	)
+	if err == nil || !strings.Contains(err.Error(), "--init-image") {
+		t.Fatalf("Execute() error = %v, want the missing file named", err)
+	}
+
+	assertNoRequest(t, requests)
 }
 
 func TestForgeCommandRejectsInvalidInput(t *testing.T) {

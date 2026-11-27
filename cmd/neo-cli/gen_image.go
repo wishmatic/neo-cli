@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -28,6 +30,7 @@ type forgeFlags struct {
 	height            int
 	cfgScale          float64
 	seed              int
+	initImage         string
 	initImageURL      string
 	denoisingStrength float64
 	enableHR          bool
@@ -64,8 +67,10 @@ func newGenImageCommand(deps cli.Deps) *cobra.Command {
 	cmd.Flags().IntVar(&flags.height, "height", 0, "output height in pixels")
 	cmd.Flags().Float64Var(&flags.cfgScale, "cfg-scale", 7, "classifier-free guidance scale")
 	cmd.Flags().IntVar(&flags.seed, "seed", -1, "random seed; -1 is random")
+	cmd.Flags().StringVar(&flags.initImage, "init-image", "",
+		"path to a local image to transform instead of generating from scratch")
 	cmd.Flags().StringVar(&flags.initImageURL, "init-image-url", "",
-		"image to transform instead of generating from scratch")
+		"URL of an image to transform instead of generating from scratch")
 	cmd.Flags().Float64Var(&flags.denoisingStrength, "denoising-strength", 0,
 		"how much of the init image to change")
 	cmd.Flags().BoolVar(&flags.enableHR, "enable-hr", false, "enable hi-res second-pass upscaling")
@@ -109,9 +114,9 @@ func forgeRun(ctx context.Context, deps cli.Deps, flags forgeFlags, args []strin
 		return err
 	}
 
-	initImage, err := fetchInitImage(ctx, resolver, flags.initImageURL)
+	initImage, err := readInitImage(ctx, resolver, flags.initImage, flags.initImageURL)
 	if err != nil {
-		return fmt.Errorf("forge: fetch init image: %w", err)
+		return fmt.Errorf("forge: %w", err)
 	}
 
 	images, err := cli.ForgeClient(deps, cfg).Generate(ctx, flags.request(prompt, initImage))
@@ -158,10 +163,20 @@ func (f forgeFlags) request(prompt string, initImage []byte) forge.GenerateReque
 	}
 }
 
-func fetchInitImage(ctx context.Context, resolver *resolve.Client, address string) ([]byte, error) {
-	if address == "" {
+func readInitImage(ctx context.Context, resolver *resolve.Client, path, address string) ([]byte, error) {
+	switch {
+	case path != "" && address != "":
+		return nil, errors.New("pass only one of --init-image or --init-image-url")
+	case path != "":
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read --init-image: %w", err)
+		}
+
+		return data, nil
+	case address != "":
+		return resolver.Fetch(ctx, address)
+	default:
 		return nil, nil
 	}
-
-	return resolver.Fetch(ctx, address)
 }

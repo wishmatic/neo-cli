@@ -36,8 +36,6 @@ func newRoot(deps cli.Deps) *cobra.Command {
 		newServeCommand(),
 		newGenCommand(deps),
 		newEditCommand(deps),
-		newConvertCommand(deps),
-		newBgkillCommand(deps),
 	)
 
 	return root

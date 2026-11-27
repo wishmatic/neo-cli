@@ -15,7 +15,7 @@ func TestConvertCommandReEncodesTheImage(t *testing.T) {
 	dir := t.TempDir()
 
 	out, _, err := runCommand(t, cli.Deps{Config: testConfig()},
-		"convert", input.URL+"/image.png", "--format", "webp", "--out", dir,
+		"edit", "convert", input.URL+"/image.png", "--format", "webp", "--out", dir,
 	)
 	if err != nil {
 		t.Fatalf("Execute() error: %v", err)
@@ -51,7 +51,7 @@ func TestConvertCommandRefusesTheSourceFormat(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, cli.Deps{Config: testConfig()},
-		"convert", input.URL+"/image.png", "--format", "png", "--out", dir,
+		"edit", "convert", input.URL+"/image.png", "--format", "png", "--out", dir,
 	)
 	if err == nil || !strings.Contains(err.Error(), "already png") {
 		t.Fatalf("Execute() error = %v, want the already-in-format rejection", err)
@@ -64,7 +64,7 @@ func TestConvertCommandRefusesTheSourceFormat(t *testing.T) {
 
 func TestConvertCommandRequiresAFormat(t *testing.T) {
 	_, _, err := runCommand(t, cli.Deps{Config: testConfig()},
-		"convert", "http://example.test/image.png")
+		"edit", "convert", "http://example.test/image.png")
 	if err == nil || !strings.Contains(err.Error(), "--format is required") {
 		t.Errorf("Execute() error = %v, want a missing-format rejection", err)
 	}
@@ -74,7 +74,7 @@ func TestConvertCommandRejectsAnUnsupportedFormat(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, cli.Deps{Config: testConfig()},
-		"convert", "http://example.test/image.png", "--format", "bmp", "--out", dir,
+		"edit", "convert", "http://example.test/image.png", "--format", "bmp", "--out", dir,
 	)
 	if err == nil || !strings.Contains(err.Error(), "unknown format") {
 		t.Fatalf("Execute() error = %v, want an unknown format rejection", err)
@@ -90,10 +90,10 @@ func TestConvertCommandSurfacesAFetchFailure(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, cli.Deps{Config: testConfig()},
-		"convert", server.URL+"/image.png", "--format", "webp", "--out", dir,
+		"edit", "convert", server.URL+"/image.png", "--format", "webp", "--out", dir,
 	)
-	if err == nil || !strings.Contains(err.Error(), "convert: fetch image") {
-		t.Fatalf("Execute() error = %v, want a fetch failure", err)
+	if err == nil || !strings.Contains(err.Error(), "convert: read image") {
+		t.Fatalf("Execute() error = %v, want a read failure", err)
 	}
 
 	if files := writtenFiles(t, dir); len(files) != 0 {
@@ -102,11 +102,11 @@ func TestConvertCommandSurfacesAFetchFailure(t *testing.T) {
 }
 
 func TestConvertCommandSurfacesAnUndecodableImage(t *testing.T) {
-	server, _ := captureServer(t, http.StatusOK, "not an image")
+	server, _ := captureServer(t, http.StatusOK, "\x89PNG\r\n\x1a\n not really a png")
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, cli.Deps{Config: testConfig()},
-		"convert", server.URL+"/image.png", "--format", "webp", "--out", dir,
+		"edit", "convert", server.URL+"/image.png", "--format", "webp", "--out", dir,
 	)
 	if err == nil || !strings.Contains(err.Error(), "decode source image") {
 		t.Fatalf("Execute() error = %v, want a decode failure", err)

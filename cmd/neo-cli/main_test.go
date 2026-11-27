@@ -13,7 +13,7 @@ func TestHelpListsEveryCommandWithoutConfig(t *testing.T) {
 		t.Fatalf("Execute() error: %v", err)
 	}
 
-	for _, command := range []string{"serve", "gen", "edit", "convert", "bgkill"} {
+	for _, command := range []string{"serve", "gen", "edit"} {
 		if !strings.Contains(out, command) {
 			t.Errorf("help output does not mention %q:\n%s", command, out)
 		}

@@ -26,7 +26,7 @@ func TestBgkillCommandPostsTheImageAndWritesTheForeground(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, bgkillDeps(server.URL),
-		"bgkill", input.URL+"/image.png",
+		"edit", "bgkill", input.URL+"/image.png",
 		"--model", "Portrait",
 		"--full-mode",
 		"--out", dir,
@@ -66,7 +66,7 @@ func TestBgkillCommandDefaultsToGeneralAndFP16(t *testing.T) {
 		fmt.Sprintf(`{"output_image":%q}`, base64.StdEncoding.EncodeToString(png)))
 
 	_, _, err := runCommand(t, bgkillDeps(server.URL),
-		"bgkill", input.URL+"/image.png", "--out", t.TempDir(),
+		"edit", "bgkill", input.URL+"/image.png", "--out", t.TempDir(),
 	)
 	if err != nil {
 		t.Fatalf("Execute() error: %v", err)
@@ -83,10 +83,10 @@ func TestBgkillCommandSurfacesAFetchFailure(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, bgkillDeps("http://forge.test"),
-		"bgkill", input.URL+"/image.png", "--out", dir,
+		"edit", "bgkill", input.URL+"/image.png", "--out", dir,
 	)
-	if err == nil || !strings.Contains(err.Error(), "bgkill: fetch image") {
-		t.Fatalf("Execute() error = %v, want a fetch failure", err)
+	if err == nil || !strings.Contains(err.Error(), "bgkill: read image") {
+		t.Fatalf("Execute() error = %v, want a read failure", err)
 	}
 
 	if files := writtenFiles(t, dir); len(files) != 0 {
@@ -101,7 +101,7 @@ func TestBgkillCommandSurfacesAnUndecodableForeground(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, bgkillDeps(server.URL),
-		"bgkill", input.URL+"/image.png", "--out", dir,
+		"edit", "bgkill", input.URL+"/image.png", "--out", dir,
 	)
 	if err == nil || !strings.Contains(err.Error(), "failed to decode foreground") {
 		t.Fatalf("Execute() error = %v, want a decode failure", err)
@@ -116,7 +116,7 @@ func TestBgkillCommandRejectsAnUnsupportedFormat(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, bgkillDeps("http://forge.test"),
-		"bgkill", "http://example.test/image.png", "--format", "bmp", "--out", dir,
+		"edit", "bgkill", "http://example.test/image.png", "--format", "bmp", "--out", dir,
 	)
 	if err == nil || !strings.Contains(err.Error(), "unknown format") {
 		t.Fatalf("Execute() error = %v, want an unknown format rejection", err)
@@ -134,7 +134,7 @@ func TestBgkillCommandSurfacesAnUpstreamError(t *testing.T) {
 	dir := t.TempDir()
 
 	_, _, err := runCommand(t, bgkillDeps(server.URL),
-		"bgkill", input.URL+"/image.png", "--out", dir,
+		"edit", "bgkill", input.URL+"/image.png", "--out", dir,
 	)
 	if err == nil || !strings.Contains(err.Error(), "bgkill") {
 		t.Fatalf("Execute() error = %v, want a bgkill failure", err)

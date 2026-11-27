@@ -10,44 +10,90 @@ import (
 	"github.com/wishmatic/neo-mcp/internal/format"
 )
 
-type editFlags struct {
-	square       bool
-	circle       bool
-	outputFormat string
-	out          string
-}
-
 func newEditCommand(deps cli.Deps) *cobra.Command {
-	var flags editFlags
-
 	cmd := &cobra.Command{
-		Use:   "edit <image-url>",
-		Short: "Trim, pad, square, or circularise an image",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return editRun(cmd, deps, flags, args[0])
+		Use:   "edit",
+		Short: "Trim, pad, square, circularise, re-encode, or remove a background",
+		Long: "Operate on an image given as a local path or an address the resolver can read. Every " +
+			"subcommand writes its result to --out and prints the path.",
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return cmd.Help()
 		},
 	}
 
-	cmd.Flags().BoolVar(&flags.square, "square", false,
-		"center the trimmed content on a transparent square")
-	cmd.Flags().BoolVar(&flags.circle, "circle", false,
-		"cut the output into the inscribed circle; implies --square")
-	cmd.Flags().Int("padding", 0, "transparent padding in pixels around the trimmed content")
-	cmd.Flags().StringVar(&flags.outputFormat, "format", "",
-		"output image format: png, jpeg, jxl, or webp")
-	cmd.Flags().StringVar(&flags.out, "out", ".", "directory for the edited image")
+	cmd.AddCommand(
+		newEditCropCommand(deps, cropCommand{
+			name:  "trim",
+			short: "Trim an image to the bounding box of its visible content",
+		}),
+		newEditCropCommand(deps, cropCommand{
+			name:           "square",
+			short:          "Trim an image and center it on a transparent square",
+			isSquare:       true,
+			defaultPadding: edit.DefaultSquarePadding,
+		}),
+		newEditCropCommand(deps, cropCommand{
+			name:     "circle",
+			short:    "Trim an image and cut it into the inscribed circle",
+			isCircle: true,
+		}),
+		newEditConvertCommand(deps),
+		newEditBgkillCommand(deps),
+	)
 
 	return cmd
 }
 
-func editRun(cmd *cobra.Command, deps cli.Deps, flags editFlags, imageURL string) error {
+type cropCommand struct {
+	name           string
+	short          string
+	isSquare       bool
+	isCircle       bool
+	defaultPadding int
+}
+
+func newEditCropCommand(deps cli.Deps, spec cropCommand) *cobra.Command {
+	var (
+		padding      int
+		outputFormat string
+		out          string
+	)
+
+	cmd := &cobra.Command{
+		Use:   spec.name + " <image>",
+		Short: spec.short,
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			opts, _ := edit.OptionsFor(edit.Request{
+				IsCrop:   true,
+				IsSquare: spec.isSquare,
+				IsCircle: spec.isCircle,
+				Padding:  &padding,
+			})
+
+			return editCropRun(cmd, deps, opts, outputFormat, out, args[0])
+		},
+	}
+
+	cmd.Flags().IntVar(&padding, "padding", spec.defaultPadding,
+		"transparent padding in pixels around the trimmed content")
+	cmd.Flags().StringVar(&outputFormat, "format", "",
+		"output image format: png, jpeg, jxl, or webp")
+	cmd.Flags().StringVar(&out, "out", ".", "directory for the edited image")
+
+	return cmd
+}
+
+func editCropRun(
+	cmd *cobra.Command, deps cli.Deps, opts edit.Options, outputFormat, out, image string,
+) error {
 	cfg, err := cli.LoadConfig(deps)
 	if err != nil {
 		return err
 	}
 
-	target, err := cli.OutputFormat(cfg, flags.outputFormat)
+	target, err := cli.OutputFormat(cfg, outputFormat)
 	if err != nil {
 		return fmt.Errorf("edit: %w", err)
 	}
@@ -57,33 +103,22 @@ func editRun(cmd *cobra.Command, deps cli.Deps, flags editFlags, imageURL string
 		return err
 	}
 
-	source, err := resolver.Fetch(cmd.Context(), imageURL)
+	source, err := cli.ReadImage(cmd.Context(), resolver, image)
 	if err != nil {
-		return fmt.Errorf("edit: fetch image: %w", err)
+		return fmt.Errorf("edit: read image: %w", err)
 	}
 
-	out, err := editImage(source, editOptions(cmd, flags), target)
+	edited, err := editImage(source, opts, target)
 	if err != nil {
 		return fmt.Errorf("edit: %w", err)
 	}
 
-	path, err := cli.WriteImage(flags.out, out, target.MediaType())
+	path, err := cli.WriteImage(out, edited, target.MediaType())
 	if err != nil {
 		return fmt.Errorf("edit: %w", err)
 	}
 
 	return cli.PrintPaths(deps.Out, []string{path})
-}
-
-func editOptions(cmd *cobra.Command, flags editFlags) edit.Options {
-	opts, _ := edit.OptionsFor(edit.Request{
-		IsCrop:   true,
-		IsSquare: flags.square,
-		IsCircle: flags.circle,
-		Padding:  cli.OptionalInt(cmd, "padding"),
-	})
-
-	return opts
 }
 
 func editImage(data []byte, opts edit.Options, target format.Format) ([]byte, error) {

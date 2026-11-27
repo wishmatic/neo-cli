@@ -14,11 +14,11 @@ type convertFlags struct {
 	out    string
 }
 
-func newConvertCommand(deps cli.Deps) *cobra.Command {
+func newEditConvertCommand(deps cli.Deps) *cobra.Command {
 	var flags convertFlags
 
 	cmd := &cobra.Command{
-		Use:   "convert <image-url>",
+		Use:   "convert <image>",
 		Short: "Re-encode an image as png, jpeg, jxl, or webp",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -32,7 +32,7 @@ func newConvertCommand(deps cli.Deps) *cobra.Command {
 	return cmd
 }
 
-func convertRun(cmd *cobra.Command, deps cli.Deps, flags convertFlags, imageURL string) error {
+func convertRun(cmd *cobra.Command, deps cli.Deps, flags convertFlags, image string) error {
 	target, err := convertTarget(flags.format)
 	if err != nil {
 		return fmt.Errorf("convert: %w", err)
@@ -48,9 +48,9 @@ func convertRun(cmd *cobra.Command, deps cli.Deps, flags convertFlags, imageURL 
 		return err
 	}
 
-	source, err := resolver.Fetch(cmd.Context(), imageURL)
+	source, err := cli.ReadImage(cmd.Context(), resolver, image)
 	if err != nil {
-		return fmt.Errorf("convert: fetch image: %w", err)
+		return fmt.Errorf("convert: read image: %w", err)
 	}
 
 	out, err := format.Reformat(source, target)

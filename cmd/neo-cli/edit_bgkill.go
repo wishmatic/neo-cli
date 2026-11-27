@@ -16,11 +16,11 @@ type bgkillFlags struct {
 	out          string
 }
 
-func newBgkillCommand(deps cli.Deps) *cobra.Command {
+func newEditBgkillCommand(deps cli.Deps) *cobra.Command {
 	var flags bgkillFlags
 
 	cmd := &cobra.Command{
-		Use:   "bgkill <image-url>",
+		Use:   "bgkill <image>",
 		Short: "Remove the background from an image",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -37,7 +37,7 @@ func newBgkillCommand(deps cli.Deps) *cobra.Command {
 	return cmd
 }
 
-func bgkillRun(cmd *cobra.Command, deps cli.Deps, flags bgkillFlags, imageURL string) error {
+func bgkillRun(cmd *cobra.Command, deps cli.Deps, flags bgkillFlags, image string) error {
 	cfg, err := cli.LoadConfig(deps)
 	if err != nil {
 		return err
@@ -53,9 +53,9 @@ func bgkillRun(cmd *cobra.Command, deps cli.Deps, flags bgkillFlags, imageURL st
 		return err
 	}
 
-	source, err := resolver.Fetch(cmd.Context(), imageURL)
+	source, err := cli.ReadImage(cmd.Context(), resolver, image)
 	if err != nil {
-		return fmt.Errorf("bgkill: fetch image: %w", err)
+		return fmt.Errorf("bgkill: read image: %w", err)
 	}
 
 	out, err := cli.ForgeClient(deps, cfg).Bgkill(cmd.Context(), forge.BgkillRequest{
