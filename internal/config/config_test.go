@@ -179,18 +179,3 @@ func TestLoadImageURLMapDefaults(t *testing.T) {
 		t.Errorf("ImageURLMap = %q, want empty by default", cfg.ImageURLMap)
 	}
 }
-
-func TestLoadOpenAIProviders(t *testing.T) {
-	spec := "primary=https://api.example.com/api/v1=sk-test,local=http://127.0.0.1:8000/v1"
-
-	t.Setenv("OPENAI_PROVIDERS", spec)
-
-	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("Load() error: %v", err)
-	}
-
-	if cfg.OpenAIProviders != spec {
-		t.Errorf("OpenAIProviders = %q, want %q", cfg.OpenAIProviders, spec)
-	}
-}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/wishmatic/neo-mcp/internal/forge"
 	"github.com/wishmatic/neo-mcp/internal/format"
-	"github.com/wishmatic/neo-mcp/internal/openai"
 	"github.com/wishmatic/neo-mcp/internal/resolve"
 	"github.com/wishmatic/neo-mcp/internal/store"
 	"go.uber.org/zap"
@@ -16,7 +15,6 @@ type Clients struct {
 	Log *zap.Logger
 
 	Forge    *forge.Client
-	OpenAI   *openai.Client
 	Store    *store.Client
 	Resolver *resolve.Client
 

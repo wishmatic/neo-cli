@@ -13,17 +13,6 @@ Note that the only version of Forge we support is
   - It takes an optional `init_image_url`, and transforms that image instead of generating from
     scratch when it is given.
   - It is the tool with the Forge-only options: presets, VAE/text encoders, and hi-res fix.
-- `openai` generates images through any OpenAI-compatible endpoint, and names which of the
-  configured
-  endpoints to call.
-  - Set `OPENAI_PROVIDERS` to enable it: `name=endpoint=key` entries separated by commas, as in
-    `cloud=https://api.openai.com/v1=sk-xxx,local=http://127.0.0.1:8000/v1`. The name defaults to
-    the endpoint's host, the key may be left out for an endpoint that asks for none, and the first
-    entry is the default provider.
-  - Unlike the others, image inputs travel with the request inline, so the endpoint never fetches
-    anything.
-  - Which image models exist is the endpoint's own business; the caller names one the way it names a
-    Forge model.
 - Not just PNG; WebP output by default, and JPEG and JXL are supported too!
   - Adjust default output with `OUTPUT_FORMAT`.
 - Every call to an image tool stores the image and returns its URL as text; pass `inline: true` to
@@ -42,6 +31,31 @@ Note that the only version of Forge we support is
 
 ## Usage
 
+### CLI
+
+```sh
+go install github.com/wishmatic/neo-mcp/cmd/neo-cli@latest
+```
+
+The CLI exposes the same tools as the MCP server without an MCP client. It reads its settings from
+the server's environment: `SD_URL` for Forge, `OUTPUT_FORMAT` for the default output type, and
+`IMAGE_URL_MAP` for input addresses. Generated and edited images are written locally, so no file
+hosting is involved; `--out` picks the directory.
+
+```sh
+neo-cli help
+neo-cli gen image "a red fox in snow" --model sd.safetensors --forge-preset default --out ./images
+neo-cli edit https://example.com/logo.png --square --out ./images
+neo-cli convert https://example.com/logo.png --format webp --out ./images
+neo-cli bgkill https://example.com/photo.jpg --model General --out ./images
+```
+
+`gen` also answers to `generate`.
+
+`neo-cli serve` runs the MCP server itself.
+
+### Docker
+
 Deploy as a Docker image:
 
 ```sh
@@ -57,7 +71,8 @@ docker run -d \
 The MCP endpoint is served at `/mcp`.
 
 `/data` holds the image store, so bind-mount a host directory there to keep files across container
-replacements; the container runs as uid 65532, so that directory must be writable by it.
+replacements; the container runs as uid 65532, so that directory must be writable by it. The image's
+entry point is `neo-cli serve`.
 
 All other configuration is optional but strongly recommended; see [.env.example](.env.example).
 
@@ -77,8 +92,7 @@ images are served without authentication.
 
 Your agent will need knowledge of VAE and text encoder models as well as available upscalers in
 order to use them. Add these verbatim to your system prompt or a skill, along with checkpoints,
-LoRA, and anything else it needs. The same goes for the image model ids of the endpoints in
-`OPENAI_PROVIDERS`: no list is maintained here, so the agent supplies them.
+LoRA, and anything else it needs. No list is maintained here, so the agent supplies them.
 
 ### Stored Images
 
@@ -100,6 +114,14 @@ myself, I probably won't work on those features.
 
 This is also very bespoke to my use case. I recommend forking this and adjusting features to your
 needs if it doesn't quite fit your own.
+
+## Local Development
+
+Modify `.env`; you can copy from `.env.example`. Then:
+
+```sh
+go run ./cmd/neo-cli serve
+```
 
 ## License
 

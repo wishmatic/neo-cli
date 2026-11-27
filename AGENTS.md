@@ -87,14 +87,12 @@ flowchart TD
     edit["internal/edit"]
     format["internal/format"]
     forge["internal/forge"]
-    openai["internal/openai"]
     sourcemap["internal/sourcemap"]
     resolve["internal/resolve"]
     store["internal/store"]
     utils["internal/utils"]
 
     mcp --> forge
-    mcp --> openai
     mcp --> edit
     mcp --> present
     mcp --> format
@@ -106,15 +104,14 @@ flowchart TD
 
     forge --> format
     forge --> utils
-    openai --> utils
     resolve --> sourcemap
     resolve --> utils
 ```
 
-`cmd/server`, `internal/server`, and `internal/config` are deliberately left out of the diagram:
-they are wiring and config plumbing, so every edge they own is expected rather than a constraint
-worth drawing. `internal/auth` is omitted too: with the server gone it is left with no internal
-edges.
+`cmd/neo-cli`, `internal/cli`, `internal/server`, and `internal/config` are deliberately left out of
+the diagram: they are wiring and config plumbing, so every edge they own is expected rather than a
+constraint worth drawing. `internal/auth` is omitted too: with the server gone it is left with no
+internal edges.
 
 ## Comments and Docstrings
 

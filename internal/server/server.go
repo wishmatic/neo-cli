@@ -16,7 +16,6 @@ import (
 	"github.com/wishmatic/neo-mcp/internal/forge"
 	"github.com/wishmatic/neo-mcp/internal/format"
 	mcpServer "github.com/wishmatic/neo-mcp/internal/mcp"
-	"github.com/wishmatic/neo-mcp/internal/openai"
 	"github.com/wishmatic/neo-mcp/internal/resolve"
 	"github.com/wishmatic/neo-mcp/internal/sourcemap"
 	"github.com/wishmatic/neo-mcp/internal/store"
@@ -95,22 +94,9 @@ func New(cfg config.Config, log *zap.Logger) (*Server, error) {
 		return nil, fmt.Errorf("build image resolver: %w", err)
 	}
 
-	endpoints, err := openai.ParseProviders(cfg.OpenAIProviders)
-	if err != nil {
-		return nil, fmt.Errorf("OPENAI_PROVIDERS: %w", err)
-	}
-
-	var imageClient *openai.Client
-	if len(endpoints) > 0 {
-		imageClient = openai.New(endpoints)
-
-		log.Info("openai enabled", zap.Strings("providers", imageClient.ProviderNames()))
-	}
-
 	mcpSrv, err := mcpServer.New(mcpServer.Clients{
 		Log:                 log,
 		Forge:               forgeClient,
-		OpenAI:              imageClient,
 		Store:               files,
 		Resolver:            resolver,
 		DefaultOutputFormat: outputFormat,

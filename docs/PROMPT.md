@@ -22,12 +22,6 @@ Pass these filenames exactly as written; if you are unsure which to use, ask the
 - Request LoRAs in the prompt itself as `<lora:{{lora name}}:{{weight}}>`, for example
   `<lora:{{lora name}}:0.7>`.
 
-## Available openai models
-
-- `openai` passes the model id to whichever OpenAI-compatible endpoint it calls, so the ids are that
-  endpoint's own: `{{OPENAI_MODEL_IDS}}`.
-- `provider` picks between the configured endpoints; leaving it out calls the first one.
-
 ## Image preferences
 
 - Default to {{PREFERRED_SIZE}} unless the request implies otherwise.
@@ -61,10 +55,9 @@ Pass these filenames exactly as written; if you are unsure which to use, ask the
 
 ## Credits
 
-- `forge` generations never spend credit; `openai` ones bill the endpoint you call, and each call
-  reports what it cost in `costUsd`.
+- `forge` generations never spend credit.
 
 ## Worth knowing
 
 - Use the sampler, scheduler, and model names from the lists in this prompt rather than guessing.
-- {{OTHER_SETUP_NOTES}}
+- `{{OTHER_SETUP_NOTES}}`
